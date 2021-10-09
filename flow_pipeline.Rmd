@@ -1,0 +1,61 @@
+---
+title: "Cytometry analysis pipeline"
+author: "Wlad Stroukov"
+author: 
+  - Wlad Stroukov,Immunoregulation laboratory, Peter Gorer Department of Immunology, School of Immunology and Microbial Science, King’s College London, wladislaw.stroukov@kcl.ac.uk
+abstract: 
+date: "09/10/2021"  
+output:
+  html_document: 
+    code_folding: hide
+    toc: true
+    number_sections: true
+    toc_float: true
+---
+
+# Installations
+```{r}
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+
+# Installing the "basic" flow cytometry packages.  They all live on a repository called Bioconductor.
+install.packages("BiocManager")
+
+#You can either do library(BiocManager) and install("flowCore) or what I have done below.
+BiocManager::install("flowCore") #interpret .fcs files
+BiocManager::install("flowViz") #basic visulisation
+BiocManager::install("ggcyto") #advanced visulisation using the ggPlot nomenclature
+BiocManager::install("openCyto") #Used to link various analysis methodologies
+BiocManager::install("flowWorkspace") #used to build anaysis templates
+BiocManager::install("CytoML") #imports FlowJo and DiVA workspaces
+
+#These packages largly require each other to work (except flowCore which is the "base package) 
+#so will often load each other without my help.  For simplicty I have loaded them all.
+
+#You will need to "clean" your data.  flowAI and flowCut are my recomendations.  
+#flowClean is the original, but is supeceeded by flowCut
+BiocManager::install("flowAI")
+BiocManager::install("flowClean")
+
+#flowCut is not available on bioconductor and needs to be laoded straight from GitHub.  TO do this you need the package devtools.
+install.packages("devtools")
+devtools::install_github("jmeskas/flowCut")
+
+#An intresting project is CytoExploreR that trys to blend the power of R with the ease of use of a mouse.
+devtools::install_github("DillonHammill/CytoExploreRData")
+devtools::install_github("DillonHammill/CytoExploreR",build_vignettes = TRUE)
+```
+
+# Libraries
+```{r}
+library(flowCore)
+
+```
+
+
+
+```{r}
+browseVignettes("flowCore")
+
+```
