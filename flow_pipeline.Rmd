@@ -62,10 +62,9 @@ The following packages are required for the tutorial and subsequent data analysi
 
 # Libraries
 ```{r}
-library(flowCore)
-library(CytoExploreR)
-library(CytoExploreRData)
-library(flowCut)
+library(flowCore) # Base package for Flow
+library(flowAI)   # Data clean up and transformation
+library(ggcyto)   # Visualisation
 ```
 
 
@@ -83,4 +82,84 @@ files <- list.files(path="./Data/FlowRepository_FR-FCM-ZZZU_files", pattern=".FC
 fs <- flowCore::read.flowSet(files[1:10], path="./Data/FlowRepository_FR-FCM-ZZZU_files/") # load first 10 files
 fs[[1]]
 ```
+
+# Compensation, Transformation, and Cleaning
+
+Loading a file
+```{r}
+file <- "./Data/FlowRepository_FR-FCM-ZZZU_files/0004.FCS"
+fcsfile <- read.FCS(file)
+```
+
+
+```{r}
+fcsfile
+#names(fcsfile) # list of parameters
+#exprs(fcsfile) # list of expression data of all events/cells
+#each_col(fcsfile,median) # applies function to each column
+#keyword(fcsfile) # show meta data of file
+keyword(fcsfile)$FILENAME
+```
+## Compensation
+```{r}
+spillover(fcsfile) # access the spill over matrix. In this file the matrix contains no data
+fcsfile_comp <- compensate(fcsfile, spillover(fcsfile)$SPILL) # compensate the file with the spillovermatrix save in the file itself.
+```
+
+## Cleaning data
+For a set of FCS files, flow_auto_qc performs a complete and automatic quality control. It consists in the detection and removal of anomalies by checking three properties of flow cytometry: 1) flow rate (instrument speed), 2) signal acquisition (signal intensity), 3) outside of dynamic range.
+```{r, results="hide"}
+fcsfile_comp_clean <- flow_auto_qc(fcsfile_comp) # from flowAI package
+
+```
+
+
+```{r}
+fcsfile_comp_clean
+```
+#Transformation
+Transforming data from a linear to log scale. Only fluorescence channels, not FSC and SSC
+```{r}
+transformed <- estimateLogicle(fcsfile_comp_clean, colnames(fcsfile_comp_clean[,3:10])) # generates calculations for transformation
+fcsfile_comp_clean_trans <- transform(fcsfile_comp_clean, transformed)
+```
+
+# Visualisation
+using ggcyto package  
+plotting the transformed data
+```{r message=TRUE, warning=TRUE}
+#??ggcyto
+#?autoplot
+plot <- autoplot(fcsfile_comp_clean_trans) # automatic plotting
+plot
+```
+Untransformed data (linear scale) as comparison
+```{r}
+autoplot(fcsfile_comp_clean)
+```
+```{r}
+autoplot(fcsfile_comp_clean_trans, x="FITC-A", y="PE-A", bin=216) # bin argument changes the size of the hexagons
+```
+```{r}
+autoplot(fcsfile_comp_clean_trans, x="time", y="PE-A", bin=200)
+```
+Visualisation of a flowset  
+```{r}
+files <- list.files(path="./Data/FlowRepository_FR-FCM-ZZZU_files", pattern=".FCS")
+fs <- read.flowSet(files[1:10], path="./Data/FlowRepository_FR-FCM-ZZZU_files/")
+#fs[[1]]
+#spillover((fs[[4]]))
+fs_comp <- compensate(fs, spillover(fs[[1]])$SPILL ) # this applies compensation of a single file to the whole set. 
+
+fs_comp_clean <- flow_auto_qc(fs_comp)
+trans <- estimateLogicle(fs_comp_clean[[1]], colnames(fs[[1]][,3:10]))
+fs_comp_clean_trans <- transform(fs_comp_clean, trans)
+autoplot(fs_comp_clean_trans, x="FITC-A")
+```
+
+using fsApply
+```{r}
+fsApply(fs, each_col, median) # alternative to each_col() funcion for single files
+```
+
 
