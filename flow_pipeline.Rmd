@@ -13,49 +13,74 @@ output:
     toc_float: true
 ---
 
-# Installations
-```{r}
-if (!requireNamespace("BiocManager", quietly = TRUE))
-    install.packages("BiocManager")
-
-
-# Installing the "basic" flow cytometry packages.  They all live on a repository called Bioconductor.
-install.packages("BiocManager")
-
-#You can either do library(BiocManager) and install("flowCore) or what I have done below.
-BiocManager::install("flowCore") #interpret .fcs files
-BiocManager::install("flowViz") #basic visulisation
-BiocManager::install("ggcyto") #advanced visulisation using the ggPlot nomenclature
-BiocManager::install("openCyto") #Used to link various analysis methodologies
-BiocManager::install("flowWorkspace") #used to build anaysis templates
-BiocManager::install("CytoML") #imports FlowJo and DiVA workspaces
-
-#These packages largly require each other to work (except flowCore which is the "base package) 
-#so will often load each other without my help.  For simplicty I have loaded them all.
-
-#You will need to "clean" your data.  flowAI and flowCut are my recomendations.  
-#flowClean is the original, but is supeceeded by flowCut
-BiocManager::install("flowAI")
-BiocManager::install("flowClean")
-
-#flowCut is not available on bioconductor and needs to be laoded straight from GitHub.  TO do this you need the package devtools.
-install.packages("devtools")
-devtools::install_github("jmeskas/flowCut")
-
-#An intresting project is CytoExploreR that trys to blend the power of R with the ease of use of a mouse.
-devtools::install_github("DillonHammill/CytoExploreRData")
-devtools::install_github("DillonHammill/CytoExploreR",build_vignettes = TRUE)
+```{r house_keeping, echo=TRUE}
+## house keeping
+rm(list = ls()) # clears the environment, in case something gets pre-loaded from a previous session
 ```
+
+# References
+Tutorial and Exercises by Christopher Hall. Link to [GitHub](https://github.com/hally166/Cytometry-R-scripts) and [Youtube](https://www.youtube.com/watch?v=2INqQNMNaV0)
+
+
+# Data
+Data can be accessed [here](https://flowrepository.org/id/FR-FCM-ZZZU)
+
+
+# Installations
+The following packages are required for the tutorial and subsequent data analysis.
+```{r}
+# if (!requireNamespace("BiocManager", quietly = TRUE))
+#     install.packages("BiocManager")
+# 
+# 
+# # Installing the "basic" flow cytometry packages.  They all live on a repository called Bioconductor.
+# #install.packages("BiocManager")
+# 
+# #You can either do library(BiocManager) and install("flowCore) or what I have done below.
+# BiocManager::install("flowCore") #interpret .fcs files
+# BiocManager::install("flowViz") #basic visualisation
+# BiocManager::install("ggcyto") #advanced visualisation using the ggPlot nomenclature
+# BiocManager::install("openCyto") #Used to link various analysis methodologies
+# BiocManager::install("flowWorkspace") #used to build anaylsis templates
+# BiocManager::install("CytoML") #imports FlowJo and DiVA workspaces
+# 
+# #These packages largely require each other to work (except flowCore which is the "base package) 
+# #so will often load each other without any help.
+# 
+# #Packages for cleaning data: flowClean, flowAI and flowCut (it's not necessary to have all three)
+# #flowClean is the original, but is superseded by flowCut
+# BiocManager::install("flowAI")
+# BiocManager::install("flowClean")
+# BiocManager::install("flowCut")
+# #Some packages are not available on bioconductor and need to be loaded straight from GitHub.  TO do this you need the package devtools.
+# install.packages("devtools")
+# #An intresting project is CytoExploreR that trys to blend the power of R with the ease of use of a mouse.
+# devtools::install_github("DillonHammill/CytoExploreRData")
+# devtools::install_github("DillonHammill/CytoExploreR",build_vignettes = TRUE)
+```
+
 
 # Libraries
 ```{r}
 library(flowCore)
-
+library(CytoExploreR)
+library(CytoExploreRData)
+library(flowCut)
 ```
 
 
-
+# Loading data
+Loading a single file
 ```{r}
-browseVignettes("flowCore")
-
+#getwd()
+file <- "./Data/FlowRepository_FR-FCM-ZZZU_files/0001.FCS"
+fcsfile <- read.FCS(file)
+fcsfile
 ```
+Loading multiple files
+```{r}
+files <- list.files(path="./Data/FlowRepository_FR-FCM-ZZZU_files", pattern=".FCS")
+fs <- flowCore::read.flowSet(files[1:10], path="./Data/FlowRepository_FR-FCM-ZZZU_files/") # load first 10 files
+fs[[1]]
+```
+
