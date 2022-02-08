@@ -71,7 +71,7 @@ library(gridExtra) # for vis of multiple plots
 ```
 
 
-# Loading data
+# Part I: Loading data
 Loading a single file
 ```{r}
 #getwd()
@@ -87,7 +87,7 @@ fs
 fs[[1]]
 ```
 
-# Compensation, Transformation, and Cleaning
+# Part II: Compensation, Transformation, and Cleaning
 
 Loading a file
 ```{r}
@@ -168,11 +168,95 @@ autoplot(fs_comp_clean_trans, x="FITC-A")
 
 using fsApply
 ```{r}
-fsApply(fs, each_col, median) # alternative to each_col() funcion for single files
+fsApply(fs, each_col, median) # equivalent to each_col() function for single files
 ```
 
-# FlowWspace: Gating, Errors, Stats, Visualisations
+# Part III: FlowWspace: Gating, Errors, Stats, Visualisations
+Load necessary data and pre-process data
+```{r}
+files <- list.files(path="./Data/Treg/", pattern = ".fcs")
+fs <- read.flowSet(files, path="./Data/Treg")
+fs[[1]]
+matrix <- spillover(fs[[1]])$SPILL
+matrix
+
+fs_comp <- compensate(fs, matrix)
+fs_comp_clean <- flow_auto_qc(fs_comp)
+
+names(fs_comp_clean[[1]])
+trans <- estimateLogicle(fs_comp_clean[[1]], colnames(fs_comp_clean[,7:12])) # select the columns that should be transformed
+fs_comp_clean_trans <- transform(fs_comp_clean, trans)
+
+```
+
+Visualisation
+```{r}
+fs_comp_clean_trans[[1]]
+autoplot(fs_comp_clean_trans[[1]])
+```
+## Basic Gating
+```{r fig.height=4, fig.width=4}
+ggcyto(fs_comp_clean_trans[[1]], aes(x="FSC-A", y="SSC-A")) + geom_hex(bins=256)
+```
+Create empty gating set. The "first" gate is assigned `root` and acts as an "anchor". The initially defined gates have first to be applied to the root gate
+```{r}
+gs <- GatingSet(fs_comp_clean_trans)
+```
+
+
+Create gate for cells (flowWorkspace package)
+```{r}
+rg1 <- rectangleGate(filterId = "Lymphocytes", "FSC-A"=c(70000, 150000),"SSC-A"=c(0,70000) ) # define first gate and assign name
+#?rectangleGate
+gs_pop_add(gs, rg1, parent="root") # add gate to gatingset
+recompute(gs) # recompute gatingset
+```
+
+Check gating set
+```{r}
+gs_get_pop_paths(gs)
+```
+
+```{r}
+ggcyto(fs_comp_clean_trans[[1]], aes(x="FSC-A", y="SSC-A")) + 
+  geom_hex(bins=256) + 
+  geom_gate(gs_pop_get_gate(gs,"Lymphocytes"))
+```
+
+```{r}
+gs_pop_get_stats(gs)
+```
+singlet gating  
+```{r}
+ggcyto(fs_comp_clean_trans[[1]], aes(x = "FSC-A", y = 'FSC-H'))+ geom_hex(bins = 256)
+
+#?polygonGate
+sqrcut <- matrix(c(50000,160000,160000,60000, 60000,160000,130000,50000),ncol=2,nrow=4)
+colnames(sqrcut) <- c("FSC-A","FSC-H")
+sqrcut
+pg1 <- polygonGate(filterId="Singlets", .gate = sqrcut)
+
+
+gs_pop_add(gs, pg1, parent = "Lymphocytes", name = "Singlets")
+gs_get_pop_paths(gs)
+recompute(gs)
+
+ggcyto(fs_comp_clean_trans, aes(x = "FSC-A", y = 'FSC-H')) + 
+  geom_hex(bins = 256)+ 
+  geom_gate(gs_pop_get_gate(gs, "/Lymphocytes/Singlets"))
+```
+
+```{r}
+plot(gs)
+gs_pop_get_stats(gs)
+gs_pop_get_stats(gs, "Singlets", "percent")
+```
+
+
+## Automatic gating
 ```{r}
 
 ```
+
+
 
